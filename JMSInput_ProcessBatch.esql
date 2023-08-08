@@ -1,0 +1,31 @@
+DECLARE loopMax EXTERNAL INTEGER 3;
+
+CREATE COMPUTE MODULE JMSInput_ProcessBatch
+	CREATE FUNCTION Main() RETURNS BOOLEAN
+	BEGIN
+		
+		DECLARE loopIdx INTEGER 0; -- Incremental Counter
+		SET Environment.Loop = 'START'; -- Loop Flag
+
+		BatchLoop:WHILE loopIdx < loopMax DO
+		
+				PROPAGATE TO TERMINAL ('out1');
+				
+				IF Environment.Loop = 'START' THEN
+					-- SET OutputRoot.BLOB = Environment.ReadMessage.BLOB.BLOB;
+					DECLARE parseOptions INTEGER BITOR(FolderBitStream, ValidateNone);
+					CREATE LASTCHILD OF OutputRoot.XMLNSC PARSE(Environment.ReadMessage.BLOB.BLOB OPTIONS parseOptions);  
+				 	
+					PROPAGATE TO TERMINAL ('out2') ; -- Process message
+				ELSE
+					LEAVE BatchLoop;
+				END IF;
+				
+				SET loopIdx = loopIdx + 1;
+				
+		END WHILE BatchLoop;
+		
+		RETURN FALSE;
+END;
+
+END MODULE;
